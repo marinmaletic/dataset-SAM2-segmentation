@@ -1,0 +1,4 @@
+torch>=2.0
+opencv-python
+numpy
+pycocotools  # optional, for compressed RLE output
