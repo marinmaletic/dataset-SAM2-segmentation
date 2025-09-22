@@ -51,6 +51,7 @@ Filenames must match (e.g. video_01.mp4 ↔ video_01.json).
 
 ### 5. Run the segmentator
 ```bash
+cd scripts
 python run_segmentation.py --cat 2 --seconds 0
 ```
 
