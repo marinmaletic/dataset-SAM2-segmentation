@@ -7,9 +7,10 @@ import time
 from pathlib import Path
 from tkinter import Tk, filedialog
 
-# === HARD-CODED SAM2 CHECKPOINT ===
+# === SAM2 CHECKPOINT ===
 CKPT_PATH = "/root/dataset-SAM2-segmentation/sam2/checkpoints/sam2.1_hiera_large.pt"  # <-- adjust as needed
 CFG_PATH_DEFAULT = "configs/sam2.1/sam2.1_hiera_l.yaml"   
+# =======================
 
 from video_utils import iter_video_frames
 from sam_utils import SAM2Runner
