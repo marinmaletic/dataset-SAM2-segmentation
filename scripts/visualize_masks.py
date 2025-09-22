@@ -78,36 +78,64 @@ def color_for_sid(sid):
     return int(bgr[0]), int(bgr[1]), int(bgr[2])
 
 # RLE decoding
-def rle_decode(rle_obj):
-    H, W = rle_obj["size"]
-    counts = rle_obj["counts"]
+def rle_decode(seg):
+    """Decode COCO-style RLE segmentation to binary mask."""
+    try:
+        from pycocotools import mask as maskUtils
+    except ImportError:
+        maskUtils = None
 
+    # Multipart: list of RLE dicts
+    if isinstance(seg, list):
+        if maskUtils is None:
+            raise RuntimeError("Multipart compressed RLE requires pycocotools. Install with: pip install pycocotools")
+        m = maskUtils.decode(seg)  # (H,W,N)
+        if m.ndim == 3:
+            m = (m.max(axis=2) > 0).astype(np.uint8)  # union of parts
+        elif m.ndim == 2:
+            m = (m > 0).astype(np.uint8)
+        else:
+            raise ValueError(f"Unexpected decoded shape for list RLE: {m.shape}")
+        return np.ascontiguousarray(m.astype(np.uint8))
+
+    # Single RLE dict
+    if not isinstance(seg, dict):
+        raise TypeError(f"Unsupported segmentation type: {type(seg)}")
+
+    H, W = seg["size"]
+    counts = seg["counts"]
+
+    # Compressed RLE (string)
     if isinstance(counts, str):
-        try:
-            from pycocotools import mask as maskUtils
-            rle = {"counts": counts.encode("ascii"), "size": [H, W]}
-            m = maskUtils.decode(rle)
-            return np.ascontiguousarray(m[:, :, 0].astype(np.uint8))
-        except Exception:
-            raise RuntimeError("Compressed RLE found but pycocotools is not available.")
+        if maskUtils is None:
+            raise RuntimeError("Compressed RLE requires pycocotools. Install with: pip install pycocotools")
+        rle = {"size": [int(H), int(W)], "counts": counts.encode("ascii")}
+        m = maskUtils.decode(rle)  # (H,W) or (H,W,1)
+        if m.ndim == 3:
+            m = m[:, :, 0]
+        elif m.ndim != 2:
+            raise ValueError(f"Unexpected decoded shape for compressed RLE: {m.shape}")
+        return np.ascontiguousarray((m > 0).astype(np.uint8))
 
-    if not isinstance(counts, list):
-        raise RuntimeError("RLE 'counts' is neither str nor list.")
+    # Uncompressed RLE (counts list of runs)
+    if isinstance(counts, list):
+        runs = counts
+        total = int(H) * int(W)
+        flat = np.zeros(total, dtype=np.uint8)
+        val = 0
+        idx = 0
+        for run_len in runs:
+            rl = int(run_len)
+            if rl > 0 and val == 1:
+                flat[idx:idx + rl] = 1
+            idx += rl
+            val ^= 1
+        if idx < total:
+            flat = np.pad(flat, (0, total - idx), constant_values=0)
+        m = flat.reshape((int(H), int(W)), order="F")
+        return np.ascontiguousarray(m.astype(np.uint8))
 
-    runs = counts
-    total = H * W
-    flat = np.zeros(total, dtype=np.uint8)
-    val = 0
-    idx = 0
-    for run_len in runs:
-        if run_len > 0 and val == 1:
-            flat[idx:idx + run_len] = 1
-        idx += run_len
-        val ^= 1
-    if idx < total:
-        flat = np.pad(flat, (0, total - idx), constant_values=0)
-    mask = flat.reshape((H, W), order="F")
-    return mask.astype(np.uint8)
+    raise TypeError(f"Unsupported RLE 'counts' type: {type(counts)}")
 
 # visualization
 def overlay_masks(frame_bgr, masks, colors, alpha=0.45):
