@@ -1,6 +1,3 @@
-# dataset-SAM2-segmentation
-This repository contains the code needed for augmenting an existing object detection dataset by adding SAM2 segmentation mask information.
-
 # SAM2 Video Dataset Segmentator
 
 This project automates **panoptic dataset generation** from videos using [Meta’s Segment Anything 2 (SAM2)](https://github.com/facebookresearch/segment-anything-2).
@@ -11,21 +8,8 @@ It:
 - Writes the resulting **COCO RLE segmentation** directly into the JSON annotations, preserving the original detections and tracking IDs.
 - Saves updated JSONs into a new `labels_with_segmentation/` folder.
 
-This is especially useful for cases where object detection.datasets are abundant, but segmentation ones are hard to find.
+This is especially useful for cases where object detection datasets are abundant, but segmentation ones are hard to find.
 
----
-
-## Features
-
-- **Automatic matching** of videos ↔ JSONs by filename.
-- **GUI folder pickers** to choose video & labels folders.
-- **Video duration limit** (`--seconds`) for quick experiments.
-- **Object category** (`--cat`) for specifying exact category ID to be segmented.
-- **Resume segmentation** skips videos that were already segmented.
-- **Progress printing** with per-500-frame info.
-- Uses **pycocotools compressed RLE** if available, otherwise falls back to uncompressed.
-
----
 
 ## Installation
 
@@ -43,13 +27,13 @@ cd checkpoints
 wget https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt
 ```
 
-Inside `run_segmentation.py` configure the SAM2 checkpoints path if needed (currently configured as this repo is installed in root folder).
+Inside `run_segmentation.py` configure the SAM2 checkpoints path if needed (currently configured as if this repo is installed in root folder).
 
 ### 3. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
-### 4. Prepare data
+### 4. Prepare the data
 Organize files like this:
 ```bash
 dataset_root/
@@ -70,13 +54,13 @@ Filenames must match (e.g. video_01.mp4 ↔ video_01.json).
 python run_segmentation.py --cat 2 --seconds 0
 ```
 
-```bash
+```
 --cat 2 → only segment objects with category_id = 2
 
 --seconds 0 → process entire video (use e.g. --seconds 60 to limit to first 60 seconds)
 ```
 
-You will:
+Next:
 
 1. Select the videos folder from a popup dialog.
 
@@ -91,3 +75,16 @@ You will:
 
 If you stop the script mid-way, re-run it.
 Already-processed videos (with _segmented.json present) will be skipped automatically.
+
+### Visualize the resulting JSON
+
+If you want to visually test how the segmentation looks, run:
+
+```bash
+python visualize_masks.py
+```
+Next in the pop-up windows:
+1. Select a video.
+2. Enter a category id (integer) to visualize, e.g. 2, or leave empty to visualize all categories.
+
+The selected video will now play with the bounding boxes and segmentation masks for the specific category. Press 'Space' to pause the video for detailed inspection or 'q' to exit.
